@@ -8,16 +8,8 @@
   ],
   "routes": [
     {
-      "src": "/webhooks/(.*)",
-      "dest": "/api"
-    },
-    {
-      "src": "/api/(.*)",
-      "dest": "/api"
-    },
-    {
       "src": "/(.*)",
-      "dest": "/api"
+      "dest": "/api/index.ts"
     }
   ],
   "env": {
