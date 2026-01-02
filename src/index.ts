@@ -81,6 +81,25 @@ const extractRequestInfo = (req: Request) => {
 
 // Routes
 
+// Root route
+app.get('/', (req: Request, res: Response) => {
+  res.json({
+    message: 'Fraud Prevention Payment System API',
+    version: '1.0.0',
+    endpoints: {
+      signup: 'POST /api/signup',
+      balance: 'GET /api/balance/:userId',
+      referrals: 'POST /api/referrals',
+      withdrawalCheck: 'POST /api/withdrawals/check',
+      adminSettings: 'GET /api/admin/settings',
+      adminControls: 'PUT /api/admin/controls/:key',
+      auditLogs: 'GET /api/audit-logs',
+      webhook: 'POST /webhooks/daraja',
+      cron: 'POST /api/cron/process-escrow'
+    }
+  });
+});
+
 // Signup with M-Pesa STK push (250 KES)
 app.post('/api/signup', async (req: Request, res: Response) => {
   try {
