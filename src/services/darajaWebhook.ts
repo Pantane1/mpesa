@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { DarajaWebhook, Transaction } from '../types';
 import { LedgerService } from './ledger';
+import { AuditLogService } from './auditLog';
 import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
 
@@ -11,7 +12,8 @@ export class DarajaWebhookService {
 
   constructor(
     private supabase: SupabaseClient,
-    private ledgerService: LedgerService
+    private ledgerService: LedgerService,
+    private auditLogService?: AuditLogService
   ) {}
 
   /**
@@ -29,10 +31,26 @@ export class DarajaWebhookService {
         merchantRequestId
       );
 
-      // Check if webhook was already processed
+      // Check if webhook was already processed (idempotency check)
       const isDuplicate = await this.checkIdempotency(idempotencyKey);
       if (isDuplicate) {
         console.log(`Duplicate webhook detected: ${idempotencyKey}`);
+        
+        // Audit log for duplicate webhook
+        if (this.auditLogService) {
+          await this.auditLogService.log(
+            'webhook_duplicate',
+            'webhook',
+            checkoutRequestId,
+            undefined,
+            { idempotencyKey, merchantRequestId },
+            {
+              ipAddress: req.ip || req.headers['x-forwarded-for'] as string,
+              userAgent: req.headers['user-agent'],
+            }
+          );
+        }
+        
         res.status(200).json({ message: 'Webhook already processed' });
         return;
       }
@@ -122,6 +140,21 @@ export class DarajaWebhookService {
         resultDesc,
         processedAt: new Date(),
       });
+
+      // Audit log webhook processing
+      if (this.auditLogService) {
+        await this.auditLogService.log(
+          'webhook_processed',
+          'webhook',
+          checkoutRequestId,
+          undefined,
+          { resultCode, resultDesc, merchantRequestId },
+          {
+            ipAddress: req.ip || req.headers['x-forwarded-for'] as string,
+            userAgent: req.headers['user-agent'],
+          }
+        );
+      }
 
       res.status(200).json({ message: 'Webhook processed successfully' });
     } catch (error: any) {

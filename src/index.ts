@@ -15,12 +15,6 @@ import { v4 as uuidv4 } from 'uuid';
 const app = express();
 app.use(express.json());
 
-// Error handling middleware
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('Error:', err);
-  res.status(500).json({ error: err.message || 'Internal server error' });
-});
-
 // Initialize Supabase
 const supabaseUrl = process.env.SUPABASE_URL || '';
 const supabaseKey = process.env.SUPABASE_ANON_KEY || '';
@@ -34,10 +28,10 @@ const supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', 
 // Initialize services
 const ledgerService = new LedgerService(supabase);
 const fraudPreventionService = new FraudPreventionService(supabase);
-const darajaWebhookService = new DarajaWebhookService(supabase, ledgerService);
+const auditLogService = new AuditLogService(supabase);
+const darajaWebhookService = new DarajaWebhookService(supabase, ledgerService, auditLogService);
 const darajaStkService = new DarajaStkService();
 const adminControlsService = new AdminControlsService(supabase);
-const auditLogService = new AuditLogService(supabase);
 const realtimeService = new RealtimeService(supabase);
 
 // Get escrow delay from admin controls (with error handling)
@@ -348,10 +342,44 @@ app.get('/api/audit-logs', async (req: Request, res: Response) => {
 app.post('/api/cron/process-escrow', async (req: Request, res: Response) => {
   try {
     const processed = await referralEscrowService.processEscrowReleases();
+    
+    // Audit log
+    await auditLogService.log(
+      'escrow_processed',
+      'cron',
+      'escrow_release',
+      undefined,
+      { processed },
+      extractRequestInfo(req)
+    );
+    
     res.json({ processed, message: `Processed ${processed} escrow releases` });
   } catch (error: any) {
+    console.error('Escrow processing error:', error);
     res.status(500).json({ error: error.message });
   }
+});
+
+// Error handling middleware (must be after all routes)
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('Unhandled error:', err);
+  
+  // Log error to audit log
+  auditLogService.log(
+    'error_occurred',
+    'system',
+    'error',
+    req.headers['x-user-id'] as string | undefined,
+    { error: err.message, stack: err.stack },
+    extractRequestInfo(req)
+  ).catch(console.error);
+  
+  res.status(500).json({ error: err.message || 'Internal server error' });
+});
+
+// 404 handler
+app.use((req: express.Request, res: express.Response) => {
+  res.status(404).json({ error: 'Route not found' });
 });
 
 // Export app for Vercel serverless
