@@ -15,10 +15,21 @@ import { v4 as uuidv4 } from 'uuid';
 const app = express();
 app.use(express.json());
 
+// Error handling middleware
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('Error:', err);
+  res.status(500).json({ error: err.message || 'Internal server error' });
+});
+
 // Initialize Supabase
 const supabaseUrl = process.env.SUPABASE_URL || '';
 const supabaseKey = process.env.SUPABASE_ANON_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseKey);
+
+if (!supabaseUrl || !supabaseKey) {
+  console.warn('Warning: SUPABASE_URL or SUPABASE_ANON_KEY not set. Some features may not work.');
+}
+
+const supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseKey || 'placeholder-key');
 
 // Initialize services
 const ledgerService = new LedgerService(supabase);
@@ -29,12 +40,17 @@ const adminControlsService = new AdminControlsService(supabase);
 const auditLogService = new AuditLogService(supabase);
 const realtimeService = new RealtimeService(supabase);
 
-// Get escrow delay from admin controls
+// Get escrow delay from admin controls (with error handling)
 let escrowDelayDays = 7;
 adminControlsService.getSystemSettings().then((settings) => {
   escrowDelayDays = settings.escrowDelayDays;
+}).catch((error) => {
+  console.error('Failed to get system settings:', error);
+  // Use default value on error
+  escrowDelayDays = 7;
 });
 
+// Initialize referral escrow service with default delay (will be updated async)
 const referralEscrowService = new ReferralEscrowService(
   supabase,
   ledgerService,
