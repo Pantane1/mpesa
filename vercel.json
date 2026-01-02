@@ -14,6 +14,12 @@
   ],
   "env": {
     "NODE_ENV": "production"
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/process-escrow",
+      "schedule": "0 * * * *"
+    }
+  ]
 }
 

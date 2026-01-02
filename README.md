@@ -49,40 +49,32 @@ A comprehensive payment system with fraud prevention, ledger-based accounting, r
 
 ## Setup
 
+### Quick Start
+
+See [SETUP.md](./SETUP.md) for detailed setup instructions.
+
 ### Prerequisites
 - Node.js 18+
-- Supabase account
-- PostgreSQL database (via Supabase)
+- Supabase account (free tier works)
+- Vercel account (for deployment)
+- M-Pesa Daraja API credentials (for payments)
 
 ### Installation
 
-1. Install dependencies:
+1. **Install dependencies:**
 ```bash
 npm install
 ```
 
-2. Set environment variables:
-```bash
-SUPABASE_URL=your_supabase_url
-SUPABASE_ANON_KEY=your_supabase_anon_key
-PORT=3000
+2. **Set up Supabase database:**
+   - Create a Supabase project
+   - Run `database/schema.sql` in Supabase SQL Editor
 
-# M-Pesa Daraja API credentials
-DARAJA_CONSUMER_KEY=your_consumer_key
-DARAJA_CONSUMER_SECRET=your_consumer_secret
-DARAJA_PASS_KEY=your_pass_key
-DARAJA_SHORT_CODE=your_short_code
-DARAJA_BASE_URL=https://sandbox.safaricom.co.ke  # or https://api.safaricom.co.ke for production
-DARAJA_CALLBACK_URL=https://your-domain.com/webhooks/daraja
-BASE_URL=https://your-domain.com
-```
+3. **Set environment variables:**
+   - For local: Create `.env` file (see SETUP.md)
+   - For Vercel: Add in project settings
 
-3. Run database migrations:
-```bash
-# Execute database/schema.sql in your Supabase SQL editor
-```
-
-4. Build and run:
+4. **Build and run:**
 ```bash
 npm run build
 npm start
@@ -92,6 +84,14 @@ Or for development:
 ```bash
 npm run dev
 ```
+
+5. **Deploy to Vercel:**
+   - Push to GitHub
+   - Import in Vercel
+   - Set environment variables
+   - Deploy
+
+**📖 For complete setup instructions, see [SETUP.md](./SETUP.md)**
 
 ## API Endpoints
 
